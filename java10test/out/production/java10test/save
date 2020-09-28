@@ -1,0 +1,206 @@
+import javafx.application.Application;
+import javafx.event.ActionEvent;
+import javafx.event.Event;
+import javafx.event.EventHandler;
+import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.shape.Circle;
+import javafx.scene.shape.Line;
+import javafx.stage.Stage;
+import javafx.geometry.Point2D;
+import javafx.scene.paint.Color;
+import java.util.ArrayList;
+import java.awt.*;
+
+public class main extends Application{
+    ArrayList<Circle> circleList = new ArrayList<Circle>();
+    ArrayList<Vertex> vertexList = new ArrayList<Vertex>();
+    ArrayList<Vertex> upperList = new ArrayList<Vertex>();
+    ArrayList<Vertex> lowerList = new ArrayList<Vertex>();
+    ArrayList<Vertex> polygonVertices = new ArrayList<Vertex>();
+    ArrayList<Line> polygonLines = new ArrayList<Line>();
+    Scene scene;
+    Pane root;
+    public static void main(String[] args) {
+        launch(args);
+    }
+    @Override
+    public void start(Stage primaryStage) {
+        primaryStage.setTitle("Hello World!");
+        Button btn = new Button();
+        btn.setText("Say 'Hello World'");
+        btn.setOnAction(new EventHandler<ActionEvent>() {
+
+            @Override
+            public void handle(ActionEvent event) {
+                System.out.println("Hello World!");
+            }
+        });
+
+        root = new Pane();
+        for( int i = 0; i < 1000; i = i + 10 ){
+            Line line1 = new Line(0,i,2000,i);
+            if( i != 500 )
+                line1.setStroke(Color.RED);
+            line1.setOnMouseClicked(new EventHandler<MouseEvent>(){
+                public void handle(MouseEvent e ){
+                    System.out.println("line clicked ");
+                    System.out.println("X = " + e.getSceneX());
+                    System.out.println("Y = " + e.getSceneY());
+                    Circle circle = new Circle(e.getSceneX() , e.getSceneY() , 2.5, Color.BLACK);
+                    root.getChildren().add(circle);
+                    circleList.add(circle);
+                    Vertex v = new Vertex(circle);
+                    System.out.println("the x of vertex is  "+ v.x);
+                    System.out.println("the y of vertex is  "+ v.y);
+                    vertexList.add(v);
+                }
+            });
+            root.getChildren().addAll(line1);
+        }
+        for( int i = 0; i < 2000; i = i + 10 ){
+            Line line1 = new Line(i ,-1000,i,1000);
+            if( i != 1000 )
+                line1.setStroke(Color.RED);
+            line1.setOnMouseClicked(new EventHandler<MouseEvent>(){
+                public void handle(MouseEvent e ){
+                    System.out.println("line clicked ");
+                    System.out.println("X = " + e.getSceneX());
+                    System.out.println("Y = " + e.getSceneY());
+                    Circle circle = new Circle(e.getSceneX() , e.getSceneY() , 2.5, Color.BLACK);
+                    root.getChildren().add(circle);
+                    circleList.add(circle);
+                    Vertex v = new Vertex(circle);
+                    System.out.println("the x of vertex is  "+ v.x);
+                    System.out.println("the y of vertex is  "+ v.y);
+                    vertexList.add(v);
+                }
+            });
+            root.getChildren().addAll(line1);
+        }
+        Button button = new Button();
+        scene = new Scene( root, 2000 , 1000);
+        scene.setOnKeyPressed(new EventHandler<KeyEvent>() {
+            @Override
+            public void handle(KeyEvent event) {
+                if( event.getCode() == KeyCode.B )
+                    constructPolygon();
+                /*for( int i = 0; i < lowerList.size(); i++ ){
+                    System.out.println(lowerList.get(i).x + "      "  + lowerList.get(i).y + "     ");
+                }*/
+            }
+        });
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    public void constructPolygon(){
+        // find the two vertices with the highest and lowest axis
+        int lowest = 100000;
+        Vertex lowestVertex = null;
+        Vertex highestVertex = null;
+        int highest = -100000;
+
+        for( int i = 0; i < vertexList.size(); i++  ){
+            if( lowest > vertexList.get(i).x ){
+                lowest = vertexList.get(i).x;
+                lowestVertex = vertexList.get(i);
+            }
+            else if( highest < vertexList.get(i).x ){
+                highest = vertexList.get(i).x;
+                highestVertex = vertexList.get(i);
+            }
+        }
+        for(int i = 0; i < vertexList.size(); i++ ){
+            if( (highestVertex != vertexList.get(i) && lowestVertex != vertexList.get(i))  && vertexList.size() > 3){
+                if (leftTest(lowestVertex, highestVertex, vertexList.get(i)))
+                    upperList.add(vertexList.get(i));
+                else
+                    lowerList.add(vertexList.get(i));
+            }
+        }
+        ArrayList<Vertex> sortedUpperList = new ArrayList<Vertex>();
+        ArrayList<Vertex> sortedLowerList = new ArrayList<Vertex>();
+        sortedLowerList = quickSort(lowerList);
+        sortedUpperList = quickSort(upperList);
+        System.out.println("inside lowerlist");
+        for( int i = 0; i < sortedLowerList.size(); i ++ ){
+            System.out.println(sortedLowerList.get(i).x + "      " + sortedLowerList.get(i).y);
+        }
+        System.out.println("outside lowerlist");
+        System.out.println("inside upperlist");
+        for( int i = 0; i < sortedUpperList.size(); i ++ ){
+            System.out.println(sortedUpperList.get(i).x +  "      " + sortedUpperList.get(i).y);
+        }
+
+        // connecting the upper vertices
+        Line firstLine1 = new Line(lowestVertex.getCircleX() , lowestVertex.getCircleY() , sortedUpperList.get(0).getCircleX(),sortedUpperList.get(0).getCircleY());
+        root.getChildren().add(firstLine1);
+        for( int i = 0; i < sortedUpperList.size()-1; i++ ){
+            Vertex v1;
+            Vertex v2;
+            v1 = sortedUpperList.get(i);
+            v2 = sortedUpperList.get(i+1);
+            Line line = new Line(v1.getCircleX(),v1.getCircleY(),v2.getCircleX(),v2.getCircleY());
+            root.getChildren().add(line);
+        }
+        Line lastLine1 = new Line(sortedUpperList.get(sortedUpperList.size()-1).getCircleX(),sortedUpperList.get(sortedUpperList.size()-1).getCircleY(),highestVertex.getCircleX() , highestVertex.getCircleY());
+        root.getChildren().add(lastLine1);
+
+        // connecting the lower vertices
+        Line firstLine2 = new Line(lowestVertex.getCircleX() , lowestVertex.getCircleY() , sortedLowerList.get(0).getCircleX(),sortedLowerList.get(0).getCircleY());
+        root.getChildren().add(firstLine2);
+        for( int i = 0; i < sortedLowerList.size()-1; i++ ){
+            Vertex v1;
+            Vertex v2;
+            v1 = sortedLowerList.get(i);
+            v2 = sortedLowerList.get(i+1);
+            Line line = new Line(v1.getCircleX(),v1.getCircleY(),v2.getCircleX(),v2.getCircleY());
+            root.getChildren().add(line);
+        }
+        Line lastLine2 = new Line(sortedLowerList.get(sortedLowerList.size()-1).getCircleX(),sortedLowerList.get(sortedLowerList.size()-1).getCircleY(),highestVertex.getCircleX() , highestVertex.getCircleY());
+        root.getChildren().add(lastLine2);
+
+    }
+    public static boolean leftTest( Vertex p1 , Vertex p2, Vertex p3 ){
+        int first = p1.x * (p2.y - p3.y);
+        int second = (-p1.y)*(p2.x - p3.x);
+        int third = (p2.x*p3.y) - (p2.y * p3.x);
+        if ( first + second + third > 0)
+            return true;
+        else
+            return false;
+    }
+
+    public static ArrayList<Vertex> quickSort(ArrayList<Vertex> list)
+    {
+        if (list.isEmpty())
+            return list; // start with recursion base case
+        ArrayList<Vertex> sorted;  // this shall be the sorted list to return, no needd to initialise
+        ArrayList<Vertex> smaller = new ArrayList<Vertex>(); // Vehicles smaller than pivot
+        ArrayList<Vertex> greater = new ArrayList<Vertex>(); // Vehicles greater than pivot
+        Vertex pivot = list.get(0);  // first Vehicle in list, used as pivot
+        int i;
+        Vertex j;     // Variable used for Vehicles in the loop
+        for (i=1;i<list.size();i++)
+        {
+            j=list.get(i);
+            if (pivot.x >= j.x)   // make sure Vehicle has proper compareTo method
+                smaller.add(j);
+            else
+                greater.add(j);
+        }
+        smaller=quickSort(smaller);  // capitalise 's'
+        greater=quickSort(greater);  // sort both halfs recursively
+        smaller.add(pivot);          // add initial pivot to the end of the (now sorted) smaller Vehicles
+        smaller.addAll(greater);     // add the (now sorted) greater Vehicles to the smaller ones (now smaller is essentially your sorted list)
+        sorted = smaller;            // assign it to sorted; one could just as well do: return smaller
+
+        return sorted;
+    }
+}
